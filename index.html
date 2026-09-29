@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Personal Live Weather Sphere</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        /* Dynamic Background transitions */
+        #bg-viewport {
+            transition: background 1.5s ease-in-out;
+        }
+
+        /* --- LIVE WEATHER EFFECTS --- */
+        
+        /* Rain effect */
+        .rain-drop {
+            position: absolute;
+            background: linear-gradient(transparent, rgba(255, 255, 255, 0.6));
+            width: 1px;
+            height: 80px;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100px); }
+            100% { transform: translateY(100vh); }
+        }
+
+        /* Snow effect */
+        .snowflake {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: snowfall linear infinite;
+        }
+        @keyframes snowfall {
+            0% { transform: translateY(-10px) translateX(0); }
+            50% { transform: translateY(50vh) translateX(20px); }
+            100% { transform: translateY(100vh) translateX(-20px); }
+        }
+
+        /* Lightning effect */
+        @keyframes flash {
+            0%, 95%, 98%, 100% { background: transparent; }
+            96%, 99% { background: rgba(255, 255, 255, 0.8); }
+        }
+        .lightning-active {
+            animation: flash 4s infinite;
+        }
+
+        /* Sunbeam glow */
+        .sunbeam {
+            position: absolute;
+            top: -10%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(253,224,71,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: pulse 8s double infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.2); opacity: 0.9; }
+        }
+
+        /* Floating Clouds */
+        .cloud-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            filter: blur(20px);
+            border-radius: 50%;
+            animation: float 25s infinite linear;
+        }
+        @keyframes float {
+            0% { transform: translateX(-20vw); }
+            100% { transform: translateX(120vw); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative text-white flex items-center justify-center">
+
+    <!-- Live Weather Visual Layer -->
+    <div id="bg-viewport" class="absolute inset-0 z-0 bg-gradient-to-br from-slate-900 to-slate-950"></div>
+    <div id="weather-effect-layer" class="absolute inset-0 z-10 pointer-events-none overflow-hidden"></div>
+
+    <!-- Main Content Card -->
+    <main class="relative z-20 w-full max-w-lg p-6 mx-4 rounded-3xl glass transition-all duration-500 shadow-2xl">
+        
+        <!-- Search bar -->
+        <div class="flex items-center gap-2 mb-8">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-white/60"></i>
+                <input id="search-input" type="text" placeholder="Search any city..." 
+                    class="w-full pl-11 pr-4 py-3 rounded-full bg-white/10 border border-white/20 focus:outline-none focus:border-white/50 text-white placeholder-white/60 transition-all">
+            </div>
+            <button id="search-btn" class="w-12 h-12 rounded-full glass hover:bg-white/20 flex items-center justify-center transition-all">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button id="geo-btn" class="w-12 h-12 rounded-full glass hover:bg-white/20 flex items-center justify-center transition-all text-emerald-400">
+                <i class="fa-solid fa-location-crosshairs"></i>
+            </button>
+        </div>
+
+        <!-- Weather Status (Dynamic Container) -->
+        <div id="weather-info" class="text-center">
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden py-12">
+                <i class="fa-solid fa-circle-notch animate-spin text-4xl"></i>
+                <p class="mt-2 text-sm text-white/70">Consulting the atmosphere...</p>
+            </div>
+
+            <!-- Weather Details Area -->
+            <div id="weather-details" class="space-y-6">
+                <div>
+                    <h1 id="city-name" class="text-4xl font-bold tracking-wide">Enter a City</h1>
+                    <p id="date-today" class="text-white/70 text-sm mt-1">Ready to explore</p>
+                </div>
+
+                <div class="flex justify-center items-center gap-4">
+                    <span id="weather-icon-container" class="text-7xl">
+                        <i class="fa-solid fa-cloud-sun"></i>
+                    </span>
+                    <div>
+                        <div class="flex">
+                            <span id="temperature" class="text-7xl font-extrabold tracking-tighter">--</span>
+                            <span class="text-3xl font-semibold">°C</span>
+                        </div>
+                        <p id="weather-desc" class="text-lg capitalize text-emerald-300 font-medium">Clear sky</p>
+                    </div>
+                </div>
+
+                <!-- Highlight stats Grid -->
+                <div class="grid grid-cols-2 gap-3 pt-6 border-t border-white/10">
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <i class="fa-solid fa-droplet text-blue-400 text-xl"></i>
+                        <div class="text-left">
+                            <p class="text-xs text-white/50">Humidity</p>
+                            <p id="stat-humidity" class="font-semibold">--%</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <i class="fa-solid fa-wind text-teal-300 text-xl"></i>
+                        <div class="text-left">
+                            <p class="text-xs text-white/50">Wind Speed</p>
+                            <p id="stat-wind" class="font-semibold">-- km/h</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <i class="fa-solid fa-temperature-half text-orange-400 text-xl"></i>
+                        <div class="text-left">
+                            <p class="text-xs text-white/50">Feels Like</p>
+                            <p id="stat-feels" class="font-semibold">--°C</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <i class="fa-solid fa-eye text-indigo-400 text-xl"></i>
+                        <div class="text-left">
+                            <p class="text-xs text-white/50">Visibility</p>
+                            <p id="stat-vis" class="font-semibold">-- km</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Brand Signature (It's Only Yours) -->
+        <footer class="mt-8 text-center text-xs text-white/30 tracking-wider uppercase font-semibold">
+            <i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> Developed Exclusively For Me
+        </footer>
+    </main>
+
+    <script>
+        // --- API CONFIGURATION ---
+        // Register here for a free key: https://openweathermap.org/
+        const API_KEY = "85802d3ee824c32b509bc92ffc9509df"; // Provided key for demonstration (Use your own if it limits hits)
+
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const geoBtn = document.getElementById('geo-btn');
+        const bgViewport = document.getElementById('bg-viewport');
+        const effectLayer = document.getElementById('weather-effect-layer');
+
+        // Initial setup
+        document.getElementById('date-today').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+        // Event Listeners
+        searchBtn.addEventListener('click', () => fetchWeather(searchInput.value));
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fetchWeather(searchInput.value);
+        });
+        geoBtn.addEventListener('click', getMyLocation);
+
+        // Fetch using Geolocation
+        function getMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        fetchWeatherByCoords(latitude, longitude);
+                    },
+                    () => alert("Location access denied. Please type your city.")
+                );
+            }
+        }
+
+        async function fetchWeather(city) {
+            if (!city) return;
+            toggleLoading(true);
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&appid=${API_KEY}`);
+                if (!response.ok) throw new Error("City not found");
+                const data = await response.json();
+                displayWeather(data);
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        async function fetchWeatherByCoords(lat, lon) {
+            toggleLoading(true);
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
+                const data = await response.json();
+                displayWeather(data);
+            } catch (err) {
+                alert("Error finding your location weather.");
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function toggleLoading(isLoading) {
+            const details = document.getElementById('weather-details');
+            const loader = document.getElementById('loading');
+            if (isLoading) {
+                details.classList.add('hidden');
+                loader.classList.remove('hidden');
+            } else {
+                details.classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        }
+
+        function displayWeather(data) {
+            document.getElementById('city-name').innerText = `${data.name}, ${data.sys.country}`;
+            document.getElementById('temperature').innerText = Math.round(data.main.temp);
+            document.getElementById('weather-desc').innerText = data.weather[0].description;
+            document.getElementById('stat-humidity').innerText = `${data.main.humidity}%`;
+            document.getElementById('stat-wind').innerText = `${Math.round(data.wind.speed * 3.6)} km/h`;
+            document.getElementById('stat-feels').innerText = `${Math.round(data.main.feels_like)}`;
+            document.getElementById('stat-vis').innerText = `${(data.visibility / 1000).toFixed(1)} km`;
+
+            // Change weather icon based on status code
+            const iconId = data.weather[0].icon;
+            const weatherId = data.weather[0].id;
+            updateWeatherIcon(weatherId, iconId);
+
+            // Trigger Custom Live Effects
+            applyLiveBackground(weatherId);
+        }
+
+        function updateWeatherIcon(id, iconCode) {
+            const container = document.getElementById('weather-icon-container');
+            let iconClass = "fa-cloud-sun"; // Default fallback
+            
+            if (id === 800) {
+                iconClass = iconCode.includes('n') ? "fa-moon" : "fa-sun";
+            } else if (id > 800) {
+                iconClass = "fa-cloud";
+            } else if (id >= 500 && id < 600) {
+                iconClass = "fa-cloud-showers-heavy";
+            } else if (id >= 600 && id < 700) {
+                iconClass = "fa-snowflake";
+            } else if (id >= 200 && id < 300) {
+                iconClass = "fa-cloud-bolt";
+            } else if (id >= 700 && id < 800) {
+                iconClass = "fa-smog";
+            }
+
+            container.innerHTML = `<i class="fa-solid ${iconClass} text-white drop-shadow-[0_4px_10px_rgba(255,255,255,0.4)]"></i>`;
+        }
+
+        // --- LIVE BACKGROUND GENERATION ENGINE ---
+        function applyLiveBackground(weatherId) {
+            // Clear past animations
+            effectLayer.innerHTML = "";
+            bgViewport.className = "absolute inset-0 z-0 transition-all duration-1000";
+
+            if (weatherId === 800) {
+                // Clear / Sunny
+                bgViewport.classList.add("bg-gradient-to-tr", "from-amber-500", "via-orange-600", "to-sky-400");
+                
+                // Add Glowing Sunbeam
+                const beam = document.createElement('div');
+                beam.className = "sunbeam";
+                effectLayer.appendChild(beam);
+
+            } else if (weatherId > 800) {
+                // Cloudy
+                bgViewport.classList.add("bg-gradient-to-br", "from-slate-700", "via-zinc-800", "to-stone-900");
+                
+                // Generate floating clouds
+                for (let i = 0; i < 5; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.className = "cloud-element";
+                    cloud.style.width = `${Math.random() * 300 + 150}px`;
+                    cloud.style.height = `${Math.random() * 150 + 80}px`;
+                    cloud.style.top = `${Math.random() * 60}%`;
+                    cloud.style.left = `-${Math.random() * 40}px`;
+                    cloud.style.animationDelay = `${Math.random() * 15}s`;
+                    cloud.style.animationDuration = `${Math.random() * 20 + 20}s`;
+                    effectLayer.appendChild(cloud);
+                }
+
+            } else if (weatherId >= 500 && weatherId < 600) {
+                // Rain
+                bgViewport.classList.add("bg-gradient-to-b", "from-slate-900", "via-blue-950", "to-slate-950");
+                
+                // Generate raindrops
+                for (let i = 0; i < 60; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = "rain-drop";
+                    drop.style.left = `${Math.random() * 100}vw`;
+                    drop.style.animationDelay = `${Math.random() * 2}s`;
+                    drop.style.animationDuration = `${Math.random() * 1 + 0.8}s`;
+                    effectLayer.appendChild(drop);
+                }
+
+            } else if (weatherId >= 600 && weatherId < 700) {
+                // Snow
+                bgViewport.classList.add("bg-gradient-to-b", "from-blue-900", "via-sky-950", "to-slate-900");
+                
+                // Generate snowflakes
+                for (let i = 0; i < 50; i++) {
+                    const flake = document.createElement('div');
+                    flake.className = "snowflake";
+                    const size = Math.random() * 5 + 2;
+                    flake.style.width = `${size}px`;
+                    flake.style.height = `${size}px`;
+                    flake.style.left = `${Math.random() * 100}vw`;
+                    flake.style.animationDelay = `${Math.random() * 5}s`;
+                    flake.style.animationDuration = `${Math.random() * 4 + 3}s`;
+                    effectLayer.appendChild(flake);
+                }
+
+            } else if (weatherId >= 200 && weatherId < 300) {
+                // Thunderstorm
+                bgViewport.classList.add("bg-gradient-to-b", "from-neutral-950", "via-slate-950", "to-purple-950", "lightning-active");
+                
+                // Add rain to the storm too
+                for (let i = 0; i < 40; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = "rain-drop";
+                    drop.style.left = `${Math.random() * 100}vw`;
+                    drop.style.animationDelay = `${Math.random() * 1.5}s`;
+                    effectLayer.appendChild(drop);
+                }
+            } else {
+                // Mist / Fog (700s)
+                bgViewport.classList.add("bg-gradient-to-b", "from-zinc-700", "via-slate-800", "to-slate-900");
+                
+                // Low opacity mist lines
+                const mist = document.createElement('div');
+                mist.className = "absolute inset-0 bg-white/5 backdrop-blur-[2px]";
+                effectLayer.appendChild(mist);
+            }
+        }
+
+        // Auto-run coordinates search on open to look cool immediately
+        getMyLocation();
+    </script>
+</body>
+</html>

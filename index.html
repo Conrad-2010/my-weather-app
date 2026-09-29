@@ -192,8 +192,7 @@
 
     <script>
         // --- API CONFIGURATION ---
-        // Register here for a free key: https://openweathermap.org/
-        const API_KEY = "85802d3ee824c32b509bc92ffc9509df"; // Provided key for demonstration (Use your own if it limits hits)
+        const API_KEY = "acb5f965288557befd8471ce365a61a3"; // Your verified key
 
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
@@ -219,8 +218,16 @@
                         const { latitude, longitude } = position.coords;
                         fetchWeatherByCoords(latitude, longitude);
                     },
-                    () => alert("Location access denied. Please type your city.")
+                    (error) => {
+                        console.log("GPS Location failed or denied: ", error);
+                        // Fallback: search default city if user hasn't typed anything
+                        if(!searchInput.value) {
+                            fetchWeather("London");
+                        }
+                    }
                 );
+            } else {
+                fetchWeather("London");
             }
         }
 
@@ -233,7 +240,7 @@
                 const data = await response.json();
                 displayWeather(data);
             } catch (err) {
-                alert(err.message);
+                alert(err.message + ". If this is a new API Key, it might take 10-30 minutes for OpenWeather to activate it.");
             } finally {
                 toggleLoading(false);
             }
@@ -246,7 +253,7 @@
                 const data = await response.json();
                 displayWeather(data);
             } catch (err) {
-                alert("Error finding your location weather.");
+                console.error("Coords lookup failed:", err);
             } finally {
                 toggleLoading(false);
             }
@@ -389,7 +396,7 @@
             }
         }
 
-        // Auto-run coordinates search on open to look cool immediately
+        // Auto-run coordinates search on open
         getMyLocation();
     </script>
 </body>

@@ -1,4 +1,4 @@
-const VERSION="weather-sphere-v3";
+const VERSION="weather-sphere-v4";
 const SHELL=[ "./", "./index.html", "./manifest.webmanifest", "./icon.svg" ];
 self.addEventListener("install",event=>{
  event.waitUntil((async()=>{const cache=await caches.open(VERSION);await cache.addAll(SHELL);await self.skipWaiting()})());

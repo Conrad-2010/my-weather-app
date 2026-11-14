@@ -104,6 +104,13 @@ html{overflow-x:hidden}body{overflow-x:hidden}.app,.layout,.main-col,.side,.pane
 }
 @media(min-width:761px) and (max-width:980px){.layout{grid-template-columns:minmax(0,1.25fr) minmax(250px,.8fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Stability patch: keep weather scenes static to prevent screen flashing */
+.weather-scene,.weather-scene:before,.weather-scene:after,
+.weather-cloud,.weather-sun{
+ animation:none!important;
+ transition:none!important;
+}
 </style>
 </head>
 <body>
